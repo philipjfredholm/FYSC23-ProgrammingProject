@@ -6,6 +6,9 @@
 #include <Eigen/Dense>
 
 
+#include <TH1D.h>
+
+
 /*
 double coefficient(int N, double startValue, int nStates, double orbitalEnergy, double time) {
     std::complex<double> i {0, 1}; //Defines the imaginary unit
@@ -68,18 +71,27 @@ int main() {
     //const double timeInterval = 20;
     const double perturbation = 2;
 
-    //Constructors the Hamiltonian and finds the eigenvalues (tantamount to diagonalising it)
-    Eigen::MatrixXd hamiltonian = hamiltonianConstructor(length, potential);
-    hamiltonian(0,0) += perturbation;
-    Eigen::VectorXcd eigenVals = hamiltonian.eigenvalues(); //Gives an error message if we do not accept complex values.
-   
-    //Uncomment for debugging
-    //std::cout << eigenVals << std::endl;   //Prints the eigenvalues
-    //std::cout << hamiltonian << std::endl;  //Prints the Hamiltonian matrix
+    //Constructs the Hamiltonians and finds the eigenvalues (tantamount to diagonalising them)
+    Eigen::MatrixXd rawHamiltonian = hamiltonianConstructor(length, potential);
+    Eigen::MatrixXd plusHamiltonian = rawHamiltonian;
+    Eigen::MatrixXd minusHamiltonian = rawHamiltonian;
+    plusHamiltonian(0,0) += perturbation;
+    minusHamiltonian(0,0) -= perturbation;
 
-    Eigen::VectorXd initialCoefficients {{1, 2, 1, 9, 4, 5}};
+
+    Eigen::VectorXcd rawEigenVals = rawHamiltonian.eigenvalues(); //Gives an error message if we do not accept complex values (Xcd instead of Xd)
+    Eigen::VectorXcd plusEigenVals = plusHamiltonian.eigenvalues();
+    Eigen::VectorXcd minusEigenVals = minusHamiltonian.eigenvalues();
+
+    std::cout << rawEigenVals << std::endl;
+    std::cout << plusEigenVals << std::endl;
+    std::cout << minusEigenVals << std::endl;
+
+
+    //Eigen::VectorXd initialCoefficients {{1, 2, 1, 9, 4, 5}};
     //std::cout << initialCoefficients << std::endl;
-    std::cout << energy(eigenVals, initialCoefficients) << std::endl;
+    //std::cout << energy(rawEigenVals, initialCoefficients) << std::endl;
+    
 
 
 
