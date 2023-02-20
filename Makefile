@@ -5,7 +5,7 @@ INCLUDES = -I external
 
 
 all: main.cpp
-	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o main main.cpp
+	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o main main.cpp -O3
 
 
 
