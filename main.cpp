@@ -4,7 +4,9 @@
 #include <cmath>
 #include <complex>
 #include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 
+using namespace Eigen;
 
 #include <TH1D.h>
 
@@ -25,8 +27,29 @@ double coefficient(int N, double startValue, int nStates, double orbitalEnergy, 
 }
 */
 
-Eigen::MatrixXd hamiltonianConstructor(int size, double potential) {
-    Eigen::MatrixXd matrix(size, size); //Defines the matrix
+
+std::complex<double> coefficient(int N, ) {
+    
+}
+
+
+VectorXd projectCoefficients(VectorXd state);
+    /* Projects the coefficients of the energy eigenstates to the
+    desired basis. */
+
+    //Normalisation
+    VectorXd temp = state; //Necessary according to the documentation
+    double length = state.squaredNorm();
+    state = temp/length; 
+
+    //No need to project this onto the basis vectors as they are
+    //already just [1,0,...,0] , [0,1,0,...0] etc.
+
+    return state;
+
+
+MatrixXd hamiltonianConstructor(int size, double potential) {
+    MatrixXd matrix(size, size); //Defines the matrix
     
     for (int n = 0; n < size; n++) {
         for (int m = 0; m < n; m++) {
@@ -50,7 +73,7 @@ Eigen::MatrixXd hamiltonianConstructor(int size, double potential) {
 
 
 
-double energy(Eigen::VectorXcd energies, Eigen::VectorXd coefficients) {
+double energy(VectorXcd energies, VectorXd coefficients) {
     double totalEnergy = 0;
     for (int n = 0; n < energies.size(); n++) {
         totalEnergy += real(energies[n]) * abs(coefficients[n]);
@@ -72,23 +95,31 @@ int main() {
     const double perturbation = 2;
 
     //Constructs the Hamiltonians and finds the eigenvalues (tantamount to diagonalising them)
-    Eigen::MatrixXd rawHamiltonian = hamiltonianConstructor(length, potential);
-    Eigen::MatrixXd plusHamiltonian = rawHamiltonian;
-    Eigen::MatrixXd minusHamiltonian = rawHamiltonian;
+    MatrixXd rawHamiltonian = hamiltonianConstructor(length, potential);
+    MatrixXd plusHamiltonian = rawHamiltonian;
+    MatrixXd minusHamiltonian = rawHamiltonian;
     plusHamiltonian(0,0) += perturbation;
     minusHamiltonian(0,0) -= perturbation;
 
+    EigenSolver< MatrixXd> raw(rawHamiltonian);
+    EigenSolver<MatrixXd> plus(plusHamiltonian);
+    EigenSolver<MatrixXd> minus(minusHamiltonian);
 
-    Eigen::VectorXcd rawEigenVals = rawHamiltonian.eigenvalues(); //Gives an error message if we do not accept complex values (Xcd instead of Xd)
-    Eigen::VectorXcd plusEigenVals = plusHamiltonian.eigenvalues();
-    Eigen::VectorXcd minusEigenVals = minusHamiltonian.eigenvalues();
+    VectorXcd rawEigenVals = rawHamiltonian.eigenvalues(); //Gives an error message if we do not accept complex values (Xcd instead of Xd)
+    VectorXcd plusEigenVals = plusHamiltonian.eigenvalues();
+    VectorXcd minusEigenVals = minusHamiltonian.eigenvalues();
 
-    std::cout << rawEigenVals << std::endl;
-    std::cout << plusEigenVals << std::endl;
-    std::cout << minusEigenVals << std::endl;
+    //MatrixXcd rawEigenVecs = raw.eigenvectors();
+    //std::cout << rawEigenVecs.col(0) << std::endl;
 
 
-    //Eigen::VectorXd initialCoefficients {{1, 2, 1, 9, 4, 5}};
+
+    std::cout << raw.eigenvectors().col(0) << std::endl;
+    //std::cout << plusEigenVals << std::endl;
+    //std::cout << minusEigenVals << std::endl;
+
+
+    //VectorXd initialCoefficients {{1, 2, 1, 9, 4, 5}};
     //std::cout << initialCoefficients << std::endl;
     //std::cout << energy(rawEigenVals, initialCoefficients) << std::endl;
     
