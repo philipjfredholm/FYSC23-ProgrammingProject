@@ -14,11 +14,12 @@ using namespace Eigen;
 #include <TRint.h>
 #include <TCanvas.h>
 #include <TStyle.h>
+#include <TSystem.h>
 #include <TH1D.h>
 
-MatrixXd makeReal(MatrixXcd& complexMatrix) {
-    int rows = complexMatrix.rows();
-    int columns = complexMatrix.cols();
+MatrixXd makeReal(const MatrixXcd& complexMatrix) {
+    const int rows = complexMatrix.rows();
+    const int columns = complexMatrix.cols();
     MatrixXd realMatrix(rows, columns);
 
     for (int i = 0; i < rows; i++) {
@@ -57,20 +58,13 @@ MatrixXd hamiltonianConstructor(int size, double potential) {
 }
 
 std::complex<double> coefficients(int number, double time, 
-                                EigenSolver<MatrixXd>& energyBasis, VectorXd& initialValues) {
+                                const MatrixXd& basis,
+                                const VectorXd& eigenEnergies,
+                                const VectorXd& initialValues) {
     const double hbar = 1;
     const std::complex<double> i {0, 1}; //Imaginary unit
     std::complex<double> coefficient = {0, 0}; //Value to be returned
     const int problemSize = initialValues.size();
-
-    //Eigenenergies
-    const VectorXd eigenEnergies = makeReal(energyBasis.eigenvalues());
-
-    //Gets the basis vectors and normalises them
-    const MatrixXd basis = makeReal(energyBasis.eigenvectors());
-    for (int n = 0; n < problemSize; n++) {
-        basis.col(n).normalize();
-    }
 
     //Calculates the double sum
     double internalSum = 0;
@@ -95,48 +89,47 @@ std::complex<double> coefficients(int number, double time,
 
 }
 
-void makePlotInteractive(EigenSolver<MatrixXd>& hamiltonian, VectorXd& initialValues,
+void makePlotInteractive(const MatrixXd& hamiltonian, const VectorXd& energies, const VectorXd& initialValues,
             double timeInterval, double timeStepLength, int argc, char** argv) {
 
     int length = initialValues.size();
     const char* title = "Values of the coefficients at t = ";
     std::string stringTitle = "Values of the coefficients at t = ";
 
-    //ROOT handles removing things from the heap for us
-    TRint* application = new TRint("application", &argc, argv);
-    TCanvas* canvas = new TCanvas("canvas", "Simulation Result", 0, 0, 800, 600);
-    TH1D* hist = new TH1D("hist", title, length, 1, length);
-    hist->GetXaxis()->SetTitle("Well Number");
-    hist->GetYaxis()->SetTitle("#rho = |c_{n}|^{2}");
-    hist->GetXaxis()->CenterTitle(true);
-    hist->GetYaxis()->CenterTitle(true);
-    hist->GetXaxis()->SetTitleSize(0.04);
-    hist->GetYaxis()->SetTitleSize(0.045);
-    hist->SetMaximum(0.5);
-    hist->SetStats(0);
-    hist->SetFillColor(kBlue-5);
+    TRint application ("application", &argc, argv);
+    TCanvas canvas ("canvas", "Simulation Result", 0, 0, 800, 600);
+    TH1D hist ("hist", title, length, 1, length);
+    hist.GetXaxis()->SetTitle("Well Number");
+    hist.GetYaxis()->SetTitle("#rho = |c_{n}|^{2}");
+    hist.GetXaxis()->CenterTitle(true);
+    hist.GetYaxis()->CenterTitle(true);
+    hist.GetXaxis()->SetTitleSize(0.04);
+    hist.GetYaxis()->SetTitleSize(0.045);
+    hist.SetMaximum(0.5);
+    hist.SetStats(0);
+    hist.SetFillColor(kBlue-5);
 
-    canvas->Show();
+    canvas.Show();
 
     double time = 0;
-    const int million = 1000000;
+    int million = 1000000;
     std::complex<double> coefficient;
     while (time <= timeInterval) {
-        hist->Reset();
+        hist.Reset();
         for (int k = 1; k <= length; k++) { //Start at 1 to not go into underflow bin
-            coefficient = coefficients(k-1, time, hamiltonian, initialValues);
+            coefficient = coefficients(k-1, time, hamiltonian, energies, initialValues);
             double magnitude = pow(std::abs(coefficient),2);
-            hist->SetBinContent(k, magnitude);
+            hist.SetBinContent(k, magnitude);
 
         }
 
 
         std::string timeString = stringTitle + std::to_string(time);
         const char* newTitle = timeString.c_str();
-        hist->SetTitle(newTitle);
+        hist.SetTitle(newTitle);
 
-        hist->Draw();
-        canvas->Update();
+        hist.Draw();
+        canvas.Update();
 
         usleep(timeStepLength*million); //usleep() works in microseconds
         time += timeStepLength;
@@ -145,56 +138,55 @@ void makePlotInteractive(EigenSolver<MatrixXd>& hamiltonian, VectorXd& initialVa
 
     
     
-    application->Run();
+    application.Run();
 
 
 }
 
 
-void makePlot(EigenSolver<MatrixXd>& hamiltonian, VectorXd& initialValues,
+void makePlot(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
             double timeInterval, double timeStepLength) {
 
-    const int length = initialValues.size();
+    int length = initialValues.size();
     const char* title = "Values of the coefficients at t = ";
-    const std::string stringTitle = "Values of the coefficients at t = ";
+    std::string stringTitle = "Values of the coefficients at t = ";
+    gSystem->Unlink("TaskAPlus2.gif");
 
-    //ROOT handles removing things from the heap for us
-    TCanvas* canvas = new TCanvas("canvas", "Simulation Result", 0, 0, 800, 600);
-    TH1D* hist = new TH1D("hist", title, length, 1, length);
-    hist->GetXaxis()->SetTitle("Well Number");
-    hist->GetYaxis()->SetTitle("#rho = |c_{n}|^{2}");
-    hist->GetXaxis()->CenterTitle(true);
-    hist->GetYaxis()->CenterTitle(true);
-    hist->GetXaxis()->SetTitleSize(0.04);
-    hist->GetYaxis()->SetTitleSize(0.045);
-    hist->SetMaximum(0.5);
-    hist->SetStats(0);
-    hist->SetFillColor(kBlue-5);
+    TCanvas canvas("canvas", "Simulation Result", 0, 0, 800, 600);
+    TH1D hist ("hist", title, length, 1, length);
+    hist.GetXaxis()->SetTitle("Well Number");
+    hist.GetYaxis()->SetTitle("#rho = |c_{n}|^{2}");
+    hist.GetXaxis()->CenterTitle(true);
+    hist.GetYaxis()->CenterTitle(true);
+    hist.GetXaxis()->SetTitleSize(0.04);
+    hist.GetYaxis()->SetTitleSize(0.045);
+    hist.SetMaximum(0.5);
+    hist.SetStats(0);
+    hist.SetFillColor(kBlue-5);
+    gStyle->SetCanvasPreferGL(kTRUE);
 
-    canvas->Show();
+    canvas.Show();
 
     double time = 0;
-    const int million = 1000000;
     std::complex<double> coefficient;
     while (time <= timeInterval) {
-        hist->Reset();
+        hist.Reset();
         for (int k = 1; k <= length; k++) { //Start at 1 to not go into underflow bin
-            coefficient = coefficients(k-1, time, hamiltonian, initialValues);
+            coefficient = coefficients(k-1, time, hamiltonian, energies, initialValues);
             double magnitude = pow(std::abs(coefficient),2);
-            hist->SetBinContent(k, magnitude);
+            hist.SetBinContent(k, magnitude);
 
         }
 
 
         std::string timeString = stringTitle + std::to_string(time);
         const char* newTitle = timeString.c_str();
-        hist->SetTitle(newTitle);
+        hist.SetTitle(newTitle);
 
-        hist->Draw();
-        canvas->Update();
-        canvas->Print("TaskAPlus2.gif+");
+        hist.Draw();
+        canvas.Update();
+        canvas.Print("TaskAPlus2.gif+5");
 
-        usleep(timeStepLength*million); //usleep() works in microseconds
         time += timeStepLength;
     }
 
@@ -209,7 +201,7 @@ int main(int argc, char** argv) {
     const int length = 6;
     const double potential = -1;
     const double timeInterval = 20;
-    const double timeStepLength = 0.01;
+    const double timeStepLength = 0.05;
     const double perturbation = 2;
 
 
@@ -222,20 +214,38 @@ int main(int argc, char** argv) {
     minusHamiltonian(0,0) -= perturbation;
 
     //Introduces necessary things to calculate eigenvectors and eigenvalues.
-    const EigenSolver<MatrixXd> raw(rawHamiltonian);
-    const EigenSolver<MatrixXd> plus(plusHamiltonian);
-    const EigenSolver<MatrixXd> minus(minusHamiltonian);
+    EigenSolver<MatrixXd> raw(rawHamiltonian);
+    EigenSolver<MatrixXd> plus(plusHamiltonian);
+    EigenSolver<MatrixXd> minus(minusHamiltonian);
 
     //Finds the ground state values c_m(0) before the heavi-side function kicks in.
     const VectorXd rawEigenVals = makeReal(rawHamiltonian.eigenvalues());
-    auto minValue = std::min_element(rawEigenVals.begin(), rawEigenVals.end());
-    int minIndex = std::distance(rawEigenVals.begin(), minValue); 
+    const auto minValue = std::min_element(rawEigenVals.begin(), rawEigenVals.end());
+    const int minIndex = std::distance(rawEigenVals.begin(), minValue); 
 
     VectorXd initialValuesTemp = makeReal(raw.eigenvectors().col(minIndex)); //I am aware of /= notation, but the documentation says to do it this way.
     double norm = initialValuesTemp.squaredNorm();
     const VectorXd initialValues = initialValuesTemp/norm; //This gives the values c_m(0) in the \phi_n basis.
 
-    makePlotInteractive(plus, initialValues, timeInterval, timeStepLength, argc, argv);
 
+    //Finds the values for <\phi_n | \varphi_\lambda> and eigenvalues E_\lambda
+    const VectorXd plusEnergies = makeReal(plus.eigenvalues());
+    const VectorXd minusEnergies = makeReal(minus.eigenvalues());
+
+    MatrixXd plusBasis= makeReal(plus.eigenvectors());
+    MatrixXd minusBasis= makeReal(minus.eigenvectors());
+    //Normalises the eigenvectors
+    for (int n = 0; n < length; n++) {
+        plusBasis.col(n).normalize(); 
+        minusBasis.col(n).normalize();
+    }
+
+
+
+
+    makePlot(plusBasis, plusEnergies, initialValues, timeInterval, timeStepLength);
+    //makePlotInteractive(minusBasis, minusEnergies, initialValues, timeInterval, timeStepLength, argc, argv);
+    (void)argc;
+    (void)argv;
 }
 
