@@ -7,9 +7,13 @@ INCLUDES = -I external -I `root-config --incdir`/include
 
 
 all: main.cpp
-	echo $(INCLUDES)
 	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o main main.cpp -O3 `root-config --glibs --cflags --libs`
 
+taskA1:: taskA1.cpp
+	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o taskA1 taskA1.cpp -O3 `root-config --glibs --cflags --libs`
+
+taskA2:: taskA2.cpp
+	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o taskA2 taskA2.cpp -O3 `root-config --glibs --cflags --libs`
 
 
 
