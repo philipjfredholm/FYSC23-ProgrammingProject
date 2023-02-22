@@ -16,6 +16,7 @@ using namespace Eigen;
 #include <TStyle.h>
 #include <TSystem.h>
 #include <TH1D.h>
+#include <TGraph.h>
 
 
 
@@ -206,6 +207,63 @@ void makePlot(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd in
 
 
 
+void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
+            double timeInterval, double timeStepLength, int number) {
+
+
+    std::string stringTitle = "Values of the coefficient c_" + std::to_string(number) +
+                            " as a function of time for #varepsilon_1 = " +
+                             std::to_string(perturbation); 
+    const char* title = stringTitle.c_str();
+
+    std::string ylabelString = "#rho = |c_{"+std::to_string(number) +"}|^{2}";
+    const char* ylabel = ylabelString.c_str();
+
+    TCanvas canvas("canvas", "Simulation Result", 0, 0, 900, 600);
+    TGraph* graph = new TGraph();
+    graph->SetTitle(title);
+    graph->GetXaxis()->SetTitle("Time");
+    graph->GetYaxis()->SetTitle(ylabel);
+    graph->GetXaxis()->CenterTitle(true);
+    graph->GetYaxis()->CenterTitle(true);
+    graph->GetXaxis()->SetTitleSize(0.04);
+    graph->GetYaxis()->SetTitleSize(0.04);
+    gStyle->SetTitleSize(3);
+    graph->SetMaximum(0.5);
+    graph->SetStats(0);
+    graph->SetFillColor(kRed-5);
+    gStyle->SetCanvasPreferGL(kTRUE);
+    graph->SetLineColor(kRed);
+    graph->SetMarkerColor(kRed);
+
+    canvas.Show();
+
+    double time = 0;
+    std::complex<double> coefficient;
+    while (time <= timeInterval) {
+        coefficient = coefficients(number-1, time, hamiltonian, energies, initialValues);
+        double magnitude = pow(std::abs(coefficient),2);
+        graph->SetPoint(graph->GetN(), time, magnitude);
+
+        
+
+        
+
+        time += timeStepLength;
+    }
+    graph->Draw("AL");
+
+    
+    std::string filenameString ="TaskA1coefficient"+std::to_string(number)+".pdf"; 
+    const char* filename = filenameString.c_str();
+    gPad->Print(filename);
+    
+
+ }
+
+
+
+
 int main(int argc, char** argv) {
     //Constructs the Hamiltonians.
     MatrixXd rawHamiltonian = hamiltonianConstructor(length, potential);     //Equation (28) in the manual
@@ -235,10 +293,16 @@ int main(int argc, char** argv) {
     }
 
 
-
+    //Makes the plots
 
     //makePlotInteractive(basis, energies, initialValues, timeInterval, timeStepLength, argc, argv);
-    makePlot(basis, energies, initialValues, timeInterval, timeStepLength);
+    //makePlot(basis, energies, initialValues, timeInterval, timeStepLength);
+    for (int n = 1; n <= length; n++) {
+        plotGraph(basis, energies, initialValues, timeInterval, timeStepLength, n);
+
+    }
+
+
     (void)argc; //Just to turn of the -Werror flag in g++
     (void)argv;
 }
