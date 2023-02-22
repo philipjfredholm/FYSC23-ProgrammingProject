@@ -168,7 +168,7 @@ void makePlot(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd in
     hist.GetXaxis()->CenterTitle(true);
     hist.GetYaxis()->CenterTitle(true);
     hist.GetXaxis()->SetTitleSize(0.04);
-    hist.GetYaxis()->SetTitleSize(0.045);
+    hist.GetYaxis()->SetTitleSize(0.04);
     hist.SetMaximum(0.5);
     hist.SetStats(0);
     hist.SetFillColor(kBlue-5);
