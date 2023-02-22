@@ -258,6 +258,7 @@ void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd i
     const char* filename = filenameString.c_str();
     gPad->Print(filename);
     
+    delete graph;
 
  }
 
