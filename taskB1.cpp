@@ -21,11 +21,11 @@ using namespace Eigen;
 
 
 //Parameters for the simulation
-const int length = 6;
+const int length = 3;
 const double potential = -1;
 const double timeInterval = 20;
 const double timeStepLength = 0.05;
-const double perturbation = 2;
+const double perturbation = -15;
 
 
 MatrixXd makeReal(const MatrixXcd& complexMatrix) {
@@ -68,29 +68,45 @@ MatrixXd hamiltonianConstructor(int size, double potential) {
     return matrix;
 }
 
-MatrixXd doubleHamiltonianConstructor(int size, double potential) {
+MatrixXd doubleHamiltonianConstructor(int size, double potential, VectorXd uValues, VectorXd epsilonValues) {
     int newSize = std::pow(size,2);
     MatrixXd matrix(newSize, newSize);
     MatrixXd oneDimensionCase = hamiltonianConstructor(size, potential);
     for (int i = 0; i < newSize; i++) {
         //Each column of the Hamiltonian corresponds to a basis vector
-        int basisNumberOne = std::truncate(i/size); //n
-        int basisNumberTwo = i%size                 //n'
+        int basisNumberOne = std::trunc(i/size); //n
+        int basisNumberTwo = i%size;                 //n'
         for (int j = 0; j < newSize; j++) {     
-            //i = m, j = m'
-            if (basisNumberTwo == j) {
-                matrix(i, j) = oneDimensionCase(basisNumberOne, i);
+            int projectionBasisOne = std::trunc(j/size); // m
+            int projectionBasisTwo = j%size ; // m'
+
+            //Raw Structure
+            if (basisNumberTwo == projectionBasisTwo) {
+                matrix(i, j) = oneDimensionCase(basisNumberOne, projectionBasisOne);
             }
-            
+            else {
+                matrix(i,j) = 0;
+            }
 
+            if (basisNumberOne == projectionBasisOne) {
+                matrix(i,j) += oneDimensionCase(basisNumberTwo, projectionBasisTwo);
+            }
 
+            //U values
+            if (basisNumberTwo == projectionBasisTwo && basisNumberOne == projectionBasisOne &&
+                                                basisNumberTwo == projectionBasisOne) {
+                matrix(i,j) += uValues(basisNumberOne);
+            }
+
+            //Epsilon values
+            if (i == j) {
+                matrix(i,j) += epsilonValues(basisNumberOne) + epsilonValues(basisNumberTwo);
+
+            }
 
         }
-
-
-
     }
-
+    return matrix;
 
 }
 
@@ -295,6 +311,44 @@ void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd i
 
 
 int main(int argc, char** argv) {
+    VectorXd uValues(length);
+    VectorXd epsilonValues(length);
+    VectorXd zeroValues(length);
+    uValues(0) = 15;
+    epsilonValues(0) = perturbation;
+    zeroValues(0) = 0;
+
+    for (int n = 1; n < length; n++) {
+        uValues(n) = 15;
+        epsilonValues(n) = 0;
+        zeroValues(n) = 0;
+
+    }
+
+
+    //Prepares matrices and eigenvalues
+    const MatrixXd hamiltonian = doubleHamiltonianConstructor(length, potential, uValues, epsilonValues);
+    const MatrixXd rawHamiltonian = doubleHamiltonianConstructor(length, potential, uValues, zeroValues);
+    
+    EigenSolver<MatrixXd> eigenData(hamiltonian);
+    EigenSolver<MatrixXd> rawEigenData(rawHamiltonian);
+
+    //Finds the ground state
+    const VectorXd rawEigenvalues = makeReal(rawEigenData.eigenvalues());
+    const auto minValue = std::min_element(rawEigenvalues.begin(), rawEigenvalues.end());
+    const int minIndex = std::distance(rawEigenvalues.begin(), minValue); 
+
+    VectorXd initialValuesTemp = makeReal(rawEigenData.eigenvectors().col(minIndex));
+    const double norm = initialValuesTemp.squaredNorm();
+    const VectorXd initialValues = initialValuesTemp/norm;
+
+    //Finds the basis and eigenenergies after the perturbation is introduced.
+    VectorXd energies = makeReal(eigenData.eigenvalues());
+    VectorXd basis = makeReal(eigenData.eigenvectors());
+    for (int n = 0; n < std::pow(length,2) ; n++) {
+        basis.col(n).normalize();  //In place normalisation
+    }
+
 
 
 
@@ -339,11 +393,11 @@ int main(int argc, char** argv) {
 
     }
 
-
+ */
     (void)argc; //Just to turn of the -Werror flag in g++
     (void)argv;
 
 
-    */
+   
 }
 
