@@ -21,13 +21,14 @@ using namespace Eigen;
 
 
 //Parameters for the simulation
-const int length = 3;
+const int length = 6;
 const double potential = -1;
 const double timeInterval = 20;
 const double timeStepLength = 0.05;
 const double perturbation = -15;
 
 
+//For running the simulation
 MatrixXd makeReal(const MatrixXcd& complexMatrix) {
     const int rows = complexMatrix.rows();
     const int columns = complexMatrix.cols();
@@ -37,6 +38,7 @@ MatrixXd makeReal(const MatrixXcd& complexMatrix) {
         for (int j = 0; j < columns; j++) {
             if (complexMatrix(i,j).imag() != 0) {
                 std::cout << "Warning: non-real values detected!" << std::endl;
+                std::cout << complexMatrix(i,j).imag() << std::endl;
             }
 
             realMatrix(i, j) = complexMatrix(i, j).real();
@@ -110,9 +112,6 @@ MatrixXd doubleHamiltonianConstructor(int size, double potential, VectorXd uValu
 
 }
 
-
-
-
 std::complex<double> coefficients(int number, double time, 
                                 const MatrixXd& basis,
                                 const VectorXd& eigenEnergies,
@@ -143,6 +142,81 @@ std::complex<double> coefficients(int number, double time,
     return coefficient;
 
 }
+
+
+
+std::complex<double> coefficients2D(int number1, int number2, double time,
+                                    const MatrixXd& basis,
+                                    const VectorXd& eigenEnergies, 
+                                    const VectorXd& initialValues) {
+
+                    
+    //This is just a wrapper for the function coefficients() to
+    //not have to calculate the correct indices every time.
+
+    return coefficients(number1*length + number2, time, basis, eigenEnergies, initialValues);
+}
+
+
+//Plotting
+void interactiveDoubleOccupancy(const MatrixXd& basis, const VectorXd& energies, const VectorXd& initialValues,
+            double timeInterval, double timeStepLength, int argc, char** argv) {
+
+    const char* title = "Values of the coefficients at t = , #varepsilon_1 =";
+    std::string stringTitle = "Values of the coefficients at t = ";
+
+    TRint application ("application", &argc, argv);
+    TCanvas canvas ("canvas", "Simulation Result", 0, 0, 800, 600);
+    TH1D hist ("hist", title, length, 1, length);
+    hist.GetXaxis()->SetTitle("Well Number");
+    hist.GetYaxis()->SetTitle("#rho = |c_{n}|^{2}");
+    hist.GetXaxis()->CenterTitle(true);
+    hist.GetYaxis()->CenterTitle(true);
+    hist.GetXaxis()->SetTitleSize(0.04);
+    hist.GetYaxis()->SetTitleSize(0.045);
+    hist.SetMaximum(0.005);
+    hist.SetStats(0);
+    hist.SetFillColor(kBlue-5);
+
+    canvas.Show();
+
+    double time = 0;
+    int million = 1000000;
+    std::complex<double> coefficient;
+    while (time <= timeInterval) {
+        hist.Reset();
+        for (int k = 1; k <= length; k++) { //Start at 1 to not go into underflow bin
+            coefficient = coefficients2D(k-1, k-1, time, basis, energies, initialValues);
+            double magnitude = pow(std::abs(coefficient),2);
+            
+            hist.SetBinContent(k, magnitude);
+
+        }
+
+
+        std::string timeString = stringTitle + std::to_string(time)
+                                +" , #varepsilon_1 = " + std::to_string(perturbation);
+        const char* newTitle = timeString.c_str();
+        hist.SetTitle(newTitle);
+
+        hist.Draw();
+        canvas.Update();
+
+        usleep(timeStepLength*million); //usleep() works in microseconds
+        time += timeStepLength;
+    }
+
+
+    
+    
+    application.Run();
+
+
+}
+
+
+
+/*
 
 void makePlotInteractive(const MatrixXd& hamiltonian, const VectorXd& energies, const VectorXd& initialValues,
             double timeInterval, double timeStepLength, int argc, char** argv) {
@@ -199,6 +273,7 @@ void makePlotInteractive(const MatrixXd& hamiltonian, const VectorXd& energies, 
 }
 
 
+
 void makePlot(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
             double timeInterval, double timeStepLength) {
 
@@ -249,7 +324,6 @@ void makePlot(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd in
 
 
 }
-
 
 
 void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
@@ -309,8 +383,9 @@ void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd i
 
 
 
-
+*/
 int main(int argc, char** argv) {
+    //Sets up initial values for \varepsilon and the U-values
     VectorXd uValues(length);
     VectorXd epsilonValues(length);
     VectorXd zeroValues(length);
@@ -324,7 +399,6 @@ int main(int argc, char** argv) {
         zeroValues(n) = 0;
 
     }
-
 
     //Prepares matrices and eigenvalues
     const MatrixXd hamiltonian = doubleHamiltonianConstructor(length, potential, uValues, epsilonValues);
@@ -344,44 +418,17 @@ int main(int argc, char** argv) {
 
     //Finds the basis and eigenenergies after the perturbation is introduced.
     VectorXd energies = makeReal(eigenData.eigenvalues());
-    VectorXd basis = makeReal(eigenData.eigenvectors());
+    MatrixXd basis = makeReal(eigenData.eigenvectors());
     for (int n = 0; n < std::pow(length,2) ; n++) {
         basis.col(n).normalize();  //In place normalisation
     }
 
-
-
-
+    std::cout << "Plotting starts now" << std::endl;
+    interactiveDoubleOccupancy(basis, energies, initialValues, timeInterval, timeStepLength, argc, argv);
 
 
 
 /*
-    //Constructs the Hamiltonians.
-    MatrixXd rawHamiltonian = hamiltonianConstructor(length, potential);     //Equation (28) in the manual
-    MatrixXd Hamiltonian = rawHamiltonian; 
-    Hamiltonian(0,0) += perturbation;                                    //Equation (29) in the manual
-
-    //Introduces necessary things to calculate eigenvectors and eigenvalues.
-    EigenSolver<MatrixXd> raw(rawHamiltonian);
-    EigenSolver<MatrixXd> final(Hamiltonian);
-
-    //Finds the ground state values c_m(0) before the heavi-side function kicks in.
-    const VectorXd rawEigenVals = makeReal(rawHamiltonian.eigenvalues());
-    const auto minValue = std::min_element(rawEigenVals.begin(), rawEigenVals.end());
-    const int minIndex = std::distance(rawEigenVals.begin(), minValue); 
-
-    VectorXd initialValuesTemp = makeReal(raw.eigenvectors().col(minIndex)); //I am aware of /= notation, but the documentation says to do it this way.
-    double norm = initialValuesTemp.squaredNorm();
-    const VectorXd initialValues = initialValuesTemp/norm; //This gives the values c_m(0) in the \phi_n basis.
-
-    //Finds the values for <\phi_n | \varphi_\lambda> and eigenvalues E_\lambda
-    const VectorXd energies = makeReal(final.eigenvalues());
-
-    MatrixXd basis= makeReal(final.eigenvectors());
-    //Normalises the eigenvectors
-    for (int n = 0; n < length; n++) {
-        basis.col(n).normalize(); 
-    }
 
 
     //Makes the plots
