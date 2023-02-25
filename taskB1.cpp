@@ -26,17 +26,21 @@ const double potential = -1;
 const double timeInterval = 20;
 const double timeStepLength = 0.05;
 const double perturbation = -15;
+const double delta = 10;
+const double uValue = 15;
+
 
 
 //For running the simulation
 MatrixXd makeReal(const MatrixXcd& complexMatrix) {
+    const double threshold = std::pow(10, -8);
     const int rows = complexMatrix.rows();
     const int columns = complexMatrix.cols();
     MatrixXd realMatrix(rows, columns);
 
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < columns; j++) {
-            if (complexMatrix(i,j).imag() != 0) {
+            if (complexMatrix(i,j).imag() > threshold) {
                 std::cout << "Warning: non-real values detected!" << std::endl;
                 std::cout << complexMatrix(i,j).imag() << std::endl;
             }
@@ -188,7 +192,11 @@ void interactiveDoubleOccupancy(const MatrixXd& basis, const VectorXd& energies,
         for (int k = 1; k <= length; k++) { //Start at 1 to not go into underflow bin
             coefficient = coefficients2D(k-1, k-1, time, basis, energies, initialValues);
             double magnitude = pow(std::abs(coefficient),2);
-            
+            if (hist.GetMaximum() < magnitude*1.25) {
+                hist.SetMaximum(magnitude*1.25);
+            }
+
+
             hist.SetBinContent(k, magnitude);
 
         }
@@ -387,23 +395,24 @@ void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd i
 int main(int argc, char** argv) {
     //Sets up initial values for \varepsilon and the U-values
     VectorXd uValues(length);
-    VectorXd epsilonValues(length);
-    VectorXd zeroValues(length);
-    uValues(0) = 15;
-    epsilonValues(0) = perturbation;
-    zeroValues(0) = 0;
+    VectorXd timeZeroValues(length);
+    uValues(0) = 0;
+    timeZeroValues(0) = perturbation;
 
     for (int n = 1; n < length; n++) {
-        uValues(n) = 15;
-        epsilonValues(n) = 0;
-        zeroValues(n) = 0;
-
+        uValues(n) = uValue;
+        timeZeroValues(n) = 0;
     }
+
+    VectorXd epsilonValues = timeZeroValues;
+    epsilonValues(0) += delta;
 
     //Prepares matrices and eigenvalues
     const MatrixXd hamiltonian = doubleHamiltonianConstructor(length, potential, uValues, epsilonValues);
-    const MatrixXd rawHamiltonian = doubleHamiltonianConstructor(length, potential, uValues, zeroValues);
+    const MatrixXd rawHamiltonian = doubleHamiltonianConstructor(length, potential, uValues, timeZeroValues);
     
+    std::cout << hamiltonian << std::endl;
+
     EigenSolver<MatrixXd> eigenData(hamiltonian);
     EigenSolver<MatrixXd> rawEigenData(rawHamiltonian);
 
