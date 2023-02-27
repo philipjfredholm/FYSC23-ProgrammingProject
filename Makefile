@@ -15,6 +15,9 @@ taskA1:: taskA1.cpp
 taskA2:: taskA2.cpp
 	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o taskA2 taskA2.cpp -O3 `root-config --glibs --cflags --libs`
 
+taskB1:: taskB1.cpp
+	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o taskB1 taskB1.cpp -O3 `root-config --glibs --cflags --libs`
+
 
 
 .PHONY: all

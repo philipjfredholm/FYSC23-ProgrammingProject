@@ -17,6 +17,8 @@ using namespace Eigen;
 #include <TSystem.h>
 #include <TH1D.h>
 #include <TGraph.h>
+#include <TLegend.h>
+#include <TMultiGraph.h>
 
 
 //Parameters for the simulation
@@ -153,113 +155,90 @@ void makePlotInteractive(const MatrixXd& hamiltonian, const VectorXd& energies, 
 }
 
 
-void makePlot(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
+void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
             double timeInterval, double timeStepLength) {
 
-    gSystem->Unlink("TaskAPlus2.gif"); //Stops us from appending to an old gif. 
 
-    const char* title = "Values of the coefficients at t = 0, #varepsilon_1 = ";
-    std::string stringTitle = "Values of the coefficients at t = "; 
-
-    TCanvas canvas("canvas", "Simulation Result", 0, 0, 800, 600);
-    TH1D hist ("hist", title, length, 1, length);
-    hist.GetXaxis()->SetTitle("Well Number");
-    hist.GetYaxis()->SetTitle("#rho = |c_{n}|^{2}");
-    hist.GetXaxis()->CenterTitle(true);
-    hist.GetYaxis()->CenterTitle(true);
-    hist.GetXaxis()->SetTitleSize(0.04);
-    hist.GetYaxis()->SetTitleSize(0.04);
-    hist.SetMaximum(0.5);
-    hist.SetStats(0);
-    hist.SetFillColor(kBlue-5);
-    gStyle->SetCanvasPreferGL(kTRUE);
-
-    canvas.Show();
-
-    double time = 0;
-    std::complex<double> coefficient;
-    while (time <= timeInterval) {
-        hist.Reset();
-        for (int k = 1; k <= length; k++) { //Start at 1 to not go into underflow bin
-            coefficient = coefficients(k-1, time, hamiltonian, energies, initialValues);
-            double magnitude = pow(std::abs(coefficient),2);
-            hist.SetBinContent(k, magnitude);
-
-        }
-
-
-        std::string timeString = stringTitle + std::to_string(time) 
-                    +" , #varepsilon_1 = " + std::to_string(perturbation);
-        const char* newTitle = timeString.c_str();
-        hist.SetTitle(newTitle);
-
-        hist.Draw();
-        canvas.Update();
-        canvas.Print("TaskA2.gif+5");
-
-        time += timeStepLength;
-    }
-
-
-
-}
-
-
-void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
-            double timeInterval, double timeStepLength, int number) {
-
-
-    std::string stringTitle = "Values of the coefficient c_" + std::to_string(number) +
-                            " as a function of time for #varepsilon_1 = " +
-                             std::to_string(perturbation); 
+    std::string stringTitle = "Values of the coefficients #rho_{n} = |c_{n}|^{2} as a function of time for #varepsilon_{1} = " +
+                             std::to_string(perturbation).substr(0,5); 
     const char* title = stringTitle.c_str();
 
-    std::string ylabelString = "#rho = |c_{"+std::to_string(number) +"}|^{2}";
+    std::string ylabelString = "#rho = |c_{n}|^{2}";
     const char* ylabel = ylabelString.c_str();
 
-    TCanvas canvas("canvas", "Simulation Result", 0, 0, 900, 600);
-    TGraph* graph = new TGraph();
+    TCanvas* canvas = new TCanvas("canvas", "Simulation Result", 0, 0, 900, 600);
+    TMultiGraph* graph = new TMultiGraph("test", "test");
+    TLegend* myLegend = new TLegend(0.7, 0.7, .9, .9);
+    
     graph->SetTitle(title);
-    graph->GetXaxis()->SetTitle("Time");
+    graph->GetXaxis()->SetTitle("Time (seconds #upoint #hbar)");
     graph->GetYaxis()->SetTitle(ylabel);
     graph->GetXaxis()->CenterTitle(true);
     graph->GetYaxis()->CenterTitle(true);
     graph->GetXaxis()->SetTitleSize(0.04);
     graph->GetYaxis()->SetTitleSize(0.04);
     gStyle->SetTitleSize(3);
-    graph->SetMaximum(0.5);
-    graph->SetStats(0);
-    graph->SetFillColor(kBlue-5);
+    graph->SetMaximum(1);
+    gPad->SetGrid();
+    graph->GetXaxis()->SetNdivisions(20);
+    graph->GetXaxis()->SetLabelOffset(0.01);
+    graph->GetYaxis()->SetNdivisions(20);
+    //graph->GetYaxis()->SetLabelOffset(0.01);
+    graph->GetXaxis()->SetLimits(0,20);
+    //graph->SetStats(0);
     gStyle->SetCanvasPreferGL(kTRUE);
-    graph->SetLineColor(kBlue);
-    graph->SetMarkerColor(kBlue);
-
-    canvas.Show();
+    std::string legendNumber = "n = ";
+    canvas->Show();
 
     double time = 0;
-    std::complex<double> coefficient;
-    while (time <= timeInterval) {
-        coefficient = coefficients(number-1, time, hamiltonian, energies, initialValues);
-        double magnitude = pow(std::abs(coefficient),2);
-        graph->SetPoint(graph->GetN(), time, magnitude);
 
+ 
+
+    for (int number = 0; number < length; number++) {
         
 
-        
+        std::string stringNumber = std::to_string(number+1);
+        const char* legendName = (legendNumber+stringNumber).c_str();
 
-        time += timeStepLength;
+
+        TGraph* newGraph = new TGraph();
+        graph->SetTitle(legendName);
+        graph->SetName(legendName);
+
+        time = 0;
+        std::complex<double> coefficient;
+        while (time <= timeInterval) {
+            coefficient = coefficients(number, time, hamiltonian, energies, initialValues);
+            double magnitude = pow(std::abs(coefficient),2);
+            newGraph->SetPoint(newGraph->GetN(), time, magnitude);
+
+            
+
+            
+
+            time += timeStepLength;
+        }
+  
+        myLegend->AddEntry(newGraph, legendName, "L");
+        graph->Add(newGraph, "AL");
+
+        
     }
-    graph->Draw("AL");
-
+     
     
-    std::string filenameString ="TaskA2coefficient"+std::to_string(number)+".pdf"; 
+    graph->Draw("AL PLC");
+    myLegend->SetNColumns(2);
+    myLegend->Draw();
+    std::string filenameString ="TaskA2coefficients.pdf"; 
     const char* filename = filenameString.c_str();
     gPad->Print(filename);
-    
-    delete graph;
+        
 
+    
 
  }
+
+
 
 
 
@@ -300,9 +279,9 @@ int main(int argc, char** argv) {
     //makePlot(basis, energies, initialValues, timeInterval, timeStepLength);
     
     
-    for (int n = 1; n <= length; n++) {
-        plotGraph(basis, energies, initialValues, timeInterval, timeStepLength, n);
-    }
+
+    plotGraph(basis, energies, initialValues, timeInterval, timeStepLength);
+    
     (void)argc; //Just to turn of the -Werror flag in g++
     (void)argv;
 }
