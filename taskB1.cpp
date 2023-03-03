@@ -70,8 +70,11 @@ MatrixXd hamiltonianConstructor(int size, double potential) {
                 matrix(n, m) = 0;
                 matrix(m, n) = 0;
             }
+            
         }
+        matrix(n,n) = 0;
     }
+
     
     return matrix;
 }
@@ -190,7 +193,7 @@ double coefficientsSingle(int number1, double time,
     double internalSum = 0;
     //int newLength = basis.cols();
     for (int n = 0; n < length; n++) {
-        std::complex<double> value = coefficients(n*length + number1,
+        std::complex<double> value = coefficients(number1*length + n,
                          time, basis, eigenEnergies, initialValues);
         double magnitude = pow(std::abs(value),2);
         
@@ -354,175 +357,8 @@ void plotDoubleGraph(const MatrixXd& hamiltonian, const VectorXd& energies, Vect
 
 
 
-/*
-
-void makePlotInteractive(const MatrixXd& hamiltonian, const VectorXd& energies, const VectorXd& initialValues,
-            double timeInterval, double timeStepLength, int argc, char** argv) {
-
-    const char* title = "Values of the coefficients at t = , #varepsilon_1 =";
-    std::string stringTitle = "Values of the coefficients at t = ";
-
-    TRint application ("application", &argc, argv);
-    TCanvas canvas ("canvas", "Simulation Result", 0, 0, 800, 600);
-    TH1D hist ("hist", title, length, 1, length);
-    hist.GetXaxis()->SetTitle("Well Number");
-    hist.GetYaxis()->SetTitle("#rho = |c_{n}|^{2}");
-    hist.GetXaxis()->CenterTitle(true);
-    hist.GetYaxis()->CenterTitle(true);
-    hist.GetXaxis()->SetTitleSize(0.04);
-    hist.GetYaxis()->SetTitleSize(0.045);
-    hist.SetMaximum(0.5);
-    hist.SetStats(0);
-    hist.SetFillColor(kRed-5);
-
-    canvas.Show();
-
-    double time = 0;
-    int million = 1000000;
-    std::complex<double> coefficient;
-    while (time <= timeInterval) {
-        hist.Reset();
-        for (int k = 1; k <= length; k++) { //Start at 1 to not go into underflow bin
-            coefficient = coefficients(k-1, time, hamiltonian, energies, initialValues);
-            double magnitude = pow(std::abs(coefficient),2);
-            hist.SetBinContent(k, magnitude);
-
-        }
-
-
-        std::string timeString = stringTitle + std::to_string(time)
-                                +" , #varepsilon_1 = " + std::to_string(perturbation);
-        const char* newTitle = timeString.c_str();
-        hist.SetTitle(newTitle);
-
-        hist.Draw();
-        canvas.Update();
-
-        usleep(timeStepLength*million); //usleep() works in microseconds
-        time += timeStepLength;
-    }
-
-
-    
-    
-    application.Run();
-
-
-}
-
-
-
-void makePlot(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
-            double timeInterval, double timeStepLength) {
-
-    gSystem->Unlink("TaskAPlus2.gif"); //Stops us from appending to an old gif. 
-
-    const char* title = "Values of the coefficients at t = 0, #varepsilon_1 = ";
-    std::string stringTitle = "Values of the coefficients at t = "; 
-
-    TCanvas canvas("canvas", "Simulation Result", 0, 0, 800, 600);
-    TH1D hist ("hist", title, length, 1, length);
-    hist.GetXaxis()->SetTitle("Well Number");
-    hist.GetYaxis()->SetTitle("#rho = |c_{n}|^{2}");
-    hist.GetXaxis()->CenterTitle(true);
-    hist.GetYaxis()->CenterTitle(true);
-    hist.GetXaxis()->SetTitleSize(0.04);
-    hist.GetYaxis()->SetTitleSize(0.04);
-    hist.SetMaximum(0.5);
-    hist.SetStats(0);
-    hist.SetFillColor(kRed-5);
-    gStyle->SetCanvasPreferGL(kTRUE);
-
-    canvas.Show();
-
-    double time = 0;
-    std::complex<double> coefficient;
-    while (time <= timeInterval) {
-        hist.Reset();
-        for (int k = 1; k <= length; k++) { //Start at 1 to not go into underflow bin
-            coefficient = coefficients(k-1, time, hamiltonian, energies, initialValues);
-            double magnitude = pow(std::abs(coefficient),2);
-            hist.SetBinContent(k, magnitude);
-
-        }
-
-
-        std::string timeString = stringTitle + std::to_string(time) 
-                    +" , #varepsilon_1 = " + std::to_string(perturbation);
-        const char* newTitle = timeString.c_str();
-        hist.SetTitle(newTitle);
-
-        hist.Draw();
-        canvas.Update();
-        canvas.Print("TaskA1.gif+5");
-
-        time += timeStepLength;
-    }
-
-
-
-}
-
-
-void plotGraph(const MatrixXd& hamiltonian, const VectorXd& energies, VectorXd initialValues,
-            double timeInterval, double timeStepLength, int number) {
-
-
-    std::string stringTitle = "Values of the coefficient c_" + std::to_string(number) +
-                            " as a function of time for #varepsilon_1 = " +
-                             std::to_string(perturbation); 
-    const char* title = stringTitle.c_str();
-
-    std::string ylabelString = "#rho = |c_{"+std::to_string(number) +"}|^{2}";
-    const char* ylabel = ylabelString.c_str();
-
-    TCanvas canvas("canvas", "Simulation Result", 0, 0, 900, 600);
-    TGraph* graph = new TGraph();
-    graph->SetTitle(title);
-    graph->GetXaxis()->SetTitle("Time");
-    graph->GetYaxis()->SetTitle(ylabel);
-    graph->GetXaxis()->CenterTitle(true);
-    graph->GetYaxis()->CenterTitle(true);
-    graph->GetXaxis()->SetTitleSize(0.04);
-    graph->GetYaxis()->SetTitleSize(0.04);
-    gStyle->SetTitleSize(3);
-    graph->SetMaximum(0.5);
-    graph->SetStats(0);
-    graph->SetFillColor(kRed-5);
-    gStyle->SetCanvasPreferGL(kTRUE);
-    graph->SetLineColor(kRed);
-    graph->SetMarkerColor(kRed);
-
-    canvas.Show();
-
-    double time = 0;
-    std::complex<double> coefficient;
-    while (time <= timeInterval) {
-        coefficient = coefficients(number-1, time, hamiltonian, energies, initialValues);
-        double magnitude = pow(std::abs(coefficient),2);
-        graph->SetPoint(graph->GetN(), time, magnitude);
-
-        
-
-        
-
-        time += timeStepLength;
-    }
-    graph->Draw("AL");
-
-    
-    std::string filenameString ="TaskA1coefficient"+std::to_string(number)+".pdf"; 
-    const char* filename = filenameString.c_str();
-    gPad->Print(filename);
-    
-    delete graph;
-
- }
-
-
-
-*/
 int main(int argc, char** argv) {
+    std::cout.precision(16);
     //Sets up initial values for \varepsilon and the U-values
     VectorXd uValues(length);
     VectorXd timeZeroValues(length);
@@ -541,6 +377,7 @@ int main(int argc, char** argv) {
     const MatrixXd hamiltonian = doubleHamiltonianConstructor(length, potential, uValues, epsilonValues);
     const MatrixXd rawHamiltonian = doubleHamiltonianConstructor(length, potential, uValues, timeZeroValues);
     
+    std::cout << "line" << std::endl;
     std::cout << hamiltonian << std::endl;
 
     EigenSolver<MatrixXd> eigenData(hamiltonian);
@@ -552,46 +389,55 @@ int main(int argc, char** argv) {
     const auto minValue = std::min_element(rawEigenvalues.begin(), rawEigenvalues.end());
     const int minIndex = std::distance(rawEigenvalues.begin(), minValue); 
 
+    
     std::cout << "mid" << std::endl;
     //std::cout << rawEigenData.eigenvectors().col(minIndex).real() << std::endl;
     VectorXd initialValuesTemp = makeReal(rawEigenData.eigenvectors().col(minIndex));
-    const double norm = initialValuesTemp.squaredNorm();
+    const double norm = initialValuesTemp.norm();
     const VectorXd initialValues = initialValuesTemp/norm;
 
 
     std::cout << "Basis Calculation starts now" << std::endl;
     //Finds the basis and eigenenergies after the perturbation is introduced.
     VectorXd energies = makeReal(eigenData.eigenvalues());
+
+
+    std::cout << energies << std::endl;
+
     MatrixXd basis = makeReal(eigenData.eigenvectors());
+    std::cout << basis << std::endl;
+
+
+
     for (int n = 0; n < std::pow(length,2) ; n++) {
         basis.col(n).normalize();  //In place normalisation
     }
 
-    std::cout << basis << std::endl;
+    //std::cout << basis << std::endl;
+    VectorXd testvector = basis.col(0);
+    double temp = testvector.norm();
+    VectorXd testvector2 = testvector/temp;
+    double myvalue = 0;
+    for (int n = 0; n < 6; n++) {
+        myvalue += pow(std::abs(testvector2[n]),2);
+        
+    }
+
+
+    //std::cout << rawEigenvalues << std::endl;
     std::cout << "Plotting starts now" << std::endl;
-    //interactiveDoubleOccupancy(basis, energies, initialValues, timeInterval, timeStepLength, argc, argv);
 
     plotDoubleGraph(basis, energies, initialValues, timeInterval, timeStepLength);
 
-    int n1 = 4;
+    
+    std::cout << coefficients(3, 0, basis, energies, initialValues) << "and " << initialValues[3] << std::endl;
+
+    /*int n1 = 4;
     int n2 = 5;
     std::cout << coefficients(n1*length + n2, 5, basis, energies, initialValues) << std::endl;
     std::cout << coefficients(n2*length + n1, 5, basis, energies, initialValues) << std::endl;
+    */
 
-
-/*
-
-
-    //Makes the plots
-
-    //makePlotInteractive(basis, energies, initialValues, timeInterval, timeStepLength, argc, argv);
-    //makePlot(basis, energies, initialValues, timeInterval, timeStepLength);
-    for (int n = 1; n <= length; n++) {
-        plotGraph(basis, energies, initialValues, timeInterval, timeStepLength, n);
-
-    }
-
- */
     (void)argc; //Just to turn of the -Werror flag in g++
     (void)argv;
 
