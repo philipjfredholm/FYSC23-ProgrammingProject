@@ -11,4 +11,4 @@ To generate plots for Task B, the code might have to be adjusted somewhat. Most 
 Note also that taskB1.cpp is an old version of taskB2.cpp and will not produce the correct results.
 
 
-Finally, it should also be remarked upon that it is important that SelfAdjointEigenSolver<MatrixXd> is used in taskB2.cpp and not EigenSolver<MatrixXd> or incorrect results will be produced.
+Finally, it should also be remarked upon that it is important that SelfAdjointEigenSolver\<MatrixXd\> is used in taskB2.cpp and not EigenSolver\<MatrixXd\> or incorrect results will be produced.
