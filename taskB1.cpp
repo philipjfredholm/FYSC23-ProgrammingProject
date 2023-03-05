@@ -23,7 +23,7 @@ using namespace Eigen;
 
 
 //Parameters for the simulation
-const int length = 3;
+const int length = 6;
 const double potential = -1;
 const double timeInterval = 20;
 const double timeStepLength = 0.05;
@@ -56,7 +56,7 @@ MatrixXd makeReal(const MatrixXcd& complexMatrix) {
 
 }
 
-MatrixXd hamiltonianConstructor(int size, double potential) {
+MatrixXd HamiltonianConstructor(int size, double potential) {
     //Constructs the matrix from equation (28) in the manual
     MatrixXd matrix(size, size); 
 
@@ -78,6 +78,29 @@ MatrixXd hamiltonianConstructor(int size, double potential) {
     
     return matrix;
 }
+
+
+
+MatrixXd hamiltonianConstructor(int size, double potential) {
+    MatrixXd core(size, size);
+    core.setZero();
+
+    for (int n = 0; n < size; n++) { //Columns
+        for (int k = 0; k < size; k++) { //Rows
+            if (n == k+1) {
+                core(k, n) = potential;
+
+            }
+            if (k == n+1) {
+                core(k,n) = potential;
+            }
+        }
+    }
+
+    return core;
+}
+
+
 
 MatrixXd doubleHamiltonianConstructor(int size, double potential, VectorXd uValues, VectorXd epsilonValues) {
     int newSize = std::pow(size,2);

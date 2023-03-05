@@ -20,7 +20,7 @@ taskB1:: taskB1.cpp
 
 
 testB:: testB.cpp
-	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o testB testB.cpp -O3 `root-config --glibs --cflags --libs`
+	$(CXX) $(CXXVER) $(CXXWAR) $(INCLUDES) -o testB testB.cpp -O3 `root-config --glibs --cflags --libs` -DEIGEN_FAST_MATH=0 
 
 
 
