@@ -191,7 +191,7 @@ void plotDoubleGraph(const MatrixXcd& hamiltonian, const VectorXd& energies, Vec
 
     TCanvas* canvas = new TCanvas("canvas", "Simulation Result", 0, 0, 900, 600);
     TMultiGraph* graph = new TMultiGraph("test", "test");
-    TLegend* myLegend = new TLegend(0.7, 0.5, .9, .7);
+    TLegend* myLegend = new TLegend(0.7, 0.7, .9, .9);
     
     graph->SetTitle(title);
     graph->GetXaxis()->SetTitle("Time (seconds #upoint #hbar)");
@@ -603,23 +603,27 @@ int main() {
     const int length = 6;
     const double V = -1;
     const double initialEpsilon = -15;
-    //const double delta = 15;
+    const double delta = 15;
     const double uValue = 15;
 
 
-    //singleOccupancy(length, V, initialEpsilon, delta, uValue);
-    //doubleOccupancy(length, V, initialEpsilon, delta, uValue);
-
     
-    double deltaStart = 20;
+    //Single Occpancy
+    singleOccupancy(length, V, initialEpsilon, delta, uValue);
+    
+    //Double Occupancy
+    doubleOccupancy(length, V, initialEpsilon, delta, uValue);
 
+
+
+    //Difference in probability 
+    double deltaStart = 20;
+    
     for (double n = deltaStart; n <= 25; n+=0.5) {
         std::cout << n << std::endl;
         occupancyDiff(length, V, initialEpsilon, n, uValue);
     }
     
-
-
     
 
 
